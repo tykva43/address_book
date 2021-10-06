@@ -1,2 +1,8 @@
 # Virtual env dir
 /venv
+
+# IDE
+.idea/
+
+# pycahce
+__pycache__/
