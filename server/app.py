@@ -1,16 +1,13 @@
-import flask
+from flask import Flask
 
-app = flask.Flask(__name__)
+from urls import urls_blueprint
+
+app = Flask(__name__)
 app.config.from_object('settings')
 port = app.config.get('PORT')
 debug = app.config.get('DEBUG')
 host = app.config.get('HOST')
-
-
-@app.route('/')
-def main():
-    return 'Hello'
-
+app.register_blueprint(urls_blueprint, url_prefix='/api')
 
 if __name__ == '__main__':
     app.run(
