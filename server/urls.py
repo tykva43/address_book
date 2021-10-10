@@ -9,7 +9,7 @@ urls_blueprint = Blueprint('urls', __name__,)
 # Users endpoints
 @urls_blueprint.route('/users/<int:user_id>/', methods=['DELETE'])
 def remove_user(user_id):
-    return 'Remove user with id={}'.format(user_id)
+    return bl.remove_user(user_id)
 
 
 @urls_blueprint.route('/users/<int:user_id>/', methods=['POST'])

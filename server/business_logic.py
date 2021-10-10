@@ -112,3 +112,20 @@ def update_user(user_id, user_data, photo_file=None):
         else:
             updating_result['info'] = 'Updated'
     return updating_result
+
+
+def remove_user(user_id):
+    deleting_result = {}
+    # Remove user with id = user_id
+    result = db.delete(table_name='users', id=user_id, returning='photo_path')
+    # Complete db transaction
+    db.complete_transaction()
+    if len(result) is not 0:
+        try:
+            os.remove(result[0][0])
+        except:
+            pass
+        deleting_result['info'] = 'Deleted'
+    else:
+        deleting_result['info'] = 'Doesn\'t removed.  No user with such id.'
+    return deleting_result

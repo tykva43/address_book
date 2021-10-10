@@ -73,16 +73,21 @@ class DB:
         result = self.__execute_sql(query=sql_q, values=data)
         return result
 
-    def delete(self, table_name, id):
+    def delete(self, table_name, id, returning=None):
         """
         Delete one record from the table.
+        :param returning:
+        :param id: deleting record's id.
         :param table_name: str, name of table.
-        :param id: deleting record id.
         :return: return True if record is deleted and False if an error has occurred.
         """
-        sql_q = 'DELETE FROM {} WHERE id = %s RETURNING id;'.format(table_name)
+        sql_q = 'DELETE FROM {} WHERE id = %s RETURNING '.format(table_name)
+        if returning is not None:
+            sql_q += '{};'.format(returning)
+        else:
+            sql_q += 'id;'
         result = self.__execute_sql(query=sql_q, values=(id,))
-        return result is not None
+        return result
 
     def select(self, table_name, columns='*', order=None):
         """
