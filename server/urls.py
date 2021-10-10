@@ -28,6 +28,8 @@ def create_user():
     if 'photo' not in request.files:
         return redirect(request.url)
     photo_file = request.files['photo']
+    print('88888888888888888888888888888888888888888888888888888888')
+    print()
     result = bl.create_user(user_data=request.form.to_dict(), photo_file=photo_file)
     return result
 

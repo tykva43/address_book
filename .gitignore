@@ -6,3 +6,6 @@
 
 # pycahce
 __pycache__/
+
+# Other files and dirs
+/users

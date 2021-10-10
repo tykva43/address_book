@@ -1,7 +1,6 @@
 import os
 import re
-
-from werkzeug.utils import secure_filename
+import hashlib
 
 from db_access_layer import DB
 from settings import ALLOWED_EXTENSIONS, UPLOAD_FOLDER
@@ -46,8 +45,9 @@ def validate_photo_file(photo_file):
     return is_valid, errors
 
 
-def generate_photo_path(id):
-    ...
+def generate_photo_path(data, file_type):
+    hash_object = hashlib.md5(str(data).encode())
+    return '{}.{}'.format(hash_object.hexdigest(), file_type)
 
 
 def create_user(user_data, photo_file):
@@ -56,11 +56,17 @@ def create_user(user_data, photo_file):
     if not is_valid:
         return {'info': 'Invalid data', 'errors': errors}
     else:
-        del user_data['photo']
+        # If user data is correct
         user_data['photo_path'] = ''
-        db.insert('users', user_data.keys(), [user_data])
-        if not os.path.exists(UPLOAD_FOLDER):
-            os.makedirs(UPLOAD_FOLDER)
-        # photo_file.save(os.path.join(UPLOAD_FOLDER, ''.format(generate_photo_path(user_id))))
-    #     db.insert('users', user_data.keys(), [user_data])
-    ...
+        # Insert user data to database (with empty string as photo_path)
+        results = db.insert('users', user_data.keys(), user_data)
+        # Save user photo
+        user_id = results[0][0]
+        file_type = photo_file.filename.split('.')[-1]
+        filename = generate_photo_path(user_id, file_type)
+        photo_file.save(os.path.join(UPLOAD_FOLDER, filename))
+        # Update photo_path field
+        ...
+        # Complete db transaction
+        db.complete_transaction()
+        return {'info': 'ok'}
