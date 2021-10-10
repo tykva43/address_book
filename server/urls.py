@@ -1,4 +1,7 @@
 from flask import Blueprint, request
+from werkzeug.utils import redirect
+
+import business_logic as bl
 
 urls_blueprint = Blueprint('urls', __name__,)
 
@@ -21,9 +24,12 @@ def get_users_list():
 
 @urls_blueprint.route('/users/', methods=['PUT'])
 def create_user():
-    user_data = request.form.to_dict()
-
-    return 'Create user {}'.format(user_data)
+    # Check if the request has the file part
+    if 'photo' not in request.files:
+        return redirect(request.url)
+    photo_file = request.files['photo']
+    result = bl.create_user(user_data=request.form.to_dict(), photo_file=photo_file)
+    return result
 
 
 @urls_blueprint.route('/users/<int:user_id>/', methods=['PATCH'])
