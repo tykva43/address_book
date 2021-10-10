@@ -3,6 +3,7 @@ from urllib.parse import urlparse
 
 import psycopg2
 import psycopg2.extras
+from psycopg2.extras import NamedTupleCursor
 
 
 class DB:
@@ -27,7 +28,7 @@ class DB:
         :return: sql query result.
         """
         result = []
-        with self.conn.cursor() as cursor:
+        with self.conn.cursor(cursor_factory=NamedTupleCursor) as cursor:
             if not values:
                 cursor.execute(query)
             else:
@@ -73,25 +74,22 @@ class DB:
         result = self.__execute_sql(query=sql_q, values=data)
         return result
 
-    def delete(self, table_name, id, returning=None):
+    def delete(self, table_name, id, returning='id'):
         """
         Delete one record from the table.
-        :param returning:
+        :param returning: str, field of deleted object that should be returned after deleting.
         :param id: deleting record's id.
         :param table_name: str, name of table.
         :return: return True if record is deleted and False if an error has occurred.
         """
-        sql_q = 'DELETE FROM {} WHERE id = %s RETURNING '.format(table_name)
-        if returning is not None:
-            sql_q += '{};'.format(returning)
-        else:
-            sql_q += 'id;'
+        sql_q = 'DELETE FROM {} WHERE id = %s RETURNING {};'.format(table_name, returning)
         result = self.__execute_sql(query=sql_q, values=(id,))
         return result
 
-    def select(self, table_name, columns='*', order=None):
+    def select(self, table_name, columns='*', condition={}, order=None):
         """
         Get records from a table in a specific order when a given condition is met.
+        :param condition: dict of conditions where key(column_name)=value(record_value)
         :param table_name: str, name of table.
         :param columns: str, columns name that should be selected.
         :param order: tuple of two str, where first element - column name, second - 'gt' or 'lt'.
@@ -100,6 +98,9 @@ class DB:
         if columns == '':
             columns = '*'
         sql_q = 'SELECT {} FROM {}'.format(columns, table_name)
+        if len(condition.keys()) is not 0:
+            conditions = ' AND '.join(['{}={}'.format(column, condition[column]) for column in condition.keys()])
+            sql_q += ' WHERE ' + conditions
         if order is not None:
             if len(order == 2):
                 sql_q += ' ORDER BY {} {}'.format(order[0], 'DESC' if order[1] == 'lt' else 'ASC')
