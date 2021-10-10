@@ -35,11 +35,11 @@ class DB:
             result = cursor.fetchall()
         return result
 
-    def insert(self, table_name, columns_name, values):
+    def insert(self, table_name, column_names, values):
         """
         Insert value or values in table with table_name.
         :param table_name: string, name of table;
-        :param columns_name: list of str, names of columns of table;
+        :param column_names: list of str, names of columns of table;
         :param values: list of dict or just dict with data to be inserted;
         :return: result of inserting - list of identifications of created objects.
         """
@@ -47,14 +47,29 @@ class DB:
         values_template = ''
         # If a list of records is received
         if type(values) == list:
-            data = [tuple([value[column] for column in columns_name]) for value in values]
+            data = [tuple([value[column] for column in column_names]) for value in values]
             values_template = ','.join(['%s'] * len(values))
         elif type(values) == dict:
-            data = tuple([values[column] for column in columns_name])
-            values_template = '({})'.format(','.join(['%s'] * len(columns_name)))
+            data = tuple([values[column] for column in column_names])
+            values_template = '({})'.format(','.join(['%s'] * len(column_names)))
         # Create sql query
-        sql_q = 'INSERT INTO {} ({}) VALUES {} RETURNING id;'.format(table_name, ','.join(columns_name),
+        sql_q = 'INSERT INTO {} ({}) VALUES {} RETURNING id;'.format(table_name, ','.join(column_names),
                                                                      values_template)
+        result = self.__execute_sql(query=sql_q, values=data)
+        return result
+
+    def update(self, table_name, values, id):
+        """
+        Update some fields of record with identificator = id.
+        :param table_name:
+        :param column_names:
+        :param values:
+        :return:
+        """
+        data = tuple([values[column] for column in values.keys()])
+        values_template = ','.join(['{} = %s'.format(column) for column in values.keys()])
+        # Create sql query
+        sql_q = 'UPDATE {} SET {} WHERE id = {} RETURNING id;'.format(table_name, values_template, id)
         result = self.__execute_sql(query=sql_q, values=data)
         return result
 

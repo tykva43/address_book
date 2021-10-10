@@ -59,14 +59,15 @@ def create_user(user_data, photo_file):
         # If user data is correct
         user_data['photo_path'] = ''
         # Insert user data to database (with empty string as photo_path)
-        results = db.insert('users', user_data.keys(), user_data)
+        results = db.insert(table_name='users', column_names=user_data.keys(), values=user_data)
         # Save user photo
         user_id = results[0][0]
         file_type = photo_file.filename.split('.')[-1]
         filename = generate_photo_path(user_id, file_type)
-        photo_file.save(os.path.join(UPLOAD_FOLDER, filename))
-        # Update photo_path field
-        ...
+        photo_path = os.path.join(UPLOAD_FOLDER, filename)
+        photo_file.save(photo_path)
+        # Update photo_path field in user record
+        db.update(table_name='users', values={'photo_path': photo_path}, id=user_id)
         # Complete db transaction
         db.complete_transaction()
         return {'info': 'ok'}
