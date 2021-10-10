@@ -9,17 +9,17 @@ urls_blueprint = Blueprint('urls', __name__,)
 # Users endpoints
 @urls_blueprint.route('/users/<int:user_id>/', methods=['DELETE'])
 def remove_user(user_id):
-    return bl.remove_user(user_id)
+    return bl.remove_user(user_id=user_id)
 
 
 @urls_blueprint.route('/users/<int:user_id>/', methods=['POST'])
 def get_user(user_id):
-    return 'Get one user with id={}'.format(user_id)
+    return bl.get_users(user_id=user_id)
 
 
 @urls_blueprint.route('/users/', methods=['POST'])
 def get_users_list():
-    return 'Get all users'
+    return bl.get_users()
 
 
 @urls_blueprint.route('/users/', methods=['PUT'])

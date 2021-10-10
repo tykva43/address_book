@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 import psycopg2
 import psycopg2.extras
-from psycopg2.extras import NamedTupleCursor
+from psycopg2.extras import RealDictCursor
 
 
 class DB:
@@ -28,7 +28,7 @@ class DB:
         :return: sql query result.
         """
         result = []
-        with self.conn.cursor(cursor_factory=NamedTupleCursor) as cursor:
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
             if not values:
                 cursor.execute(query)
             else:
@@ -86,7 +86,7 @@ class DB:
         result = self.__execute_sql(query=sql_q, values=(id,))
         return result
 
-    def select(self, table_name, columns='*', condition={}, order=None):
+    def select(self, table_name, columns='*', condition=None, order=None):
         """
         Get records from a table in a specific order when a given condition is met.
         :param condition: dict of conditions where key(column_name)=value(record_value)
@@ -98,7 +98,7 @@ class DB:
         if columns == '':
             columns = '*'
         sql_q = 'SELECT {} FROM {}'.format(columns, table_name)
-        if len(condition.keys()) is not 0:
+        if condition is not None:
             conditions = ' AND '.join(['{}={}'.format(column, condition[column]) for column in condition.keys()])
             sql_q += ' WHERE ' + conditions
         if order is not None:

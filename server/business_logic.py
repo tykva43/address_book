@@ -73,7 +73,7 @@ def create_user(user_data, photo_file):
         # Insert user data to database (with empty string as photo_path)
         results = db.insert(table_name='users', column_names=user_data.keys(), values=user_data)
         # Save user photo
-        user_id = results[0][0]
+        user_id = results[0]['id']
         file_type = photo_file.filename.split('.')[-1]
         filename = generate_photo_path(user_id, file_type)
         photo_path = os.path.join(UPLOAD_FOLDER, filename)
@@ -122,10 +122,22 @@ def remove_user(user_id):
     db.complete_transaction()
     if len(result) is not 0:
         try:
-            os.remove(result[0][0])
+            os.remove(result[0]['id'])
         except:
             pass
         deleting_result['info'] = 'Deleted'
     else:
         deleting_result['info'] = 'Doesn\'t removed.  No user with such id.'
     return deleting_result
+
+
+def get_users(user_id=None):
+    condition = None if user_id is None else {'id': user_id}
+    result = db.select(table_name='users', columns='*', condition=condition)
+    db.complete_transaction()
+    select_result = {}
+    if user_id is None:
+        select_result['users'] = result
+    else:
+        select_result['user'] = result
+    return select_result
