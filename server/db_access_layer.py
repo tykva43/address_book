@@ -73,6 +73,33 @@ class DB:
         result = self.__execute_sql(query=sql_q, values=data)
         return result
 
+    def delete(self, table_name, id):
+        """
+        Delete one record from the table.
+        :param table_name: str, name of table.
+        :param id: deleting record id.
+        :return: return True if record is deleted and False if an error has occurred.
+        """
+        sql_q = 'DELETE FROM {} WHERE id = %s RETURNING id;'
+        result = self.__execute_sql(query=sql_q, values=(id,))
+        return result is not None
+
+    def select(self, table_name, columns='*', order=None):
+        """
+        Get records from a table in a specific order when a given condition is met.
+        :param table_name: str, name of table.
+        :param columns: str, columns name that should be selected.
+        :param order: tuple of two str, where first element - column name, second - 'gt' or 'lt'.
+        :return: list of tuples with records data.
+        """
+        if columns == '':
+            columns = '*'
+        sql_q = 'SELECT {} FROM {}'.format(columns, table_name)
+        if order is not None:
+            if len(order == 2):
+                sql_q += ' ORDER BY {} {}'.format(order[0], 'DESC' if order[1] == 'lt' else 'ASC')
+        return self.__execute_sql(sql_q)
+
     def close(self):
         """
         Close db connection.
