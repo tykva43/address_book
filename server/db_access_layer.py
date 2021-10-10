@@ -80,7 +80,7 @@ class DB:
         :param id: deleting record id.
         :return: return True if record is deleted and False if an error has occurred.
         """
-        sql_q = 'DELETE FROM {} WHERE id = %s RETURNING id;'
+        sql_q = 'DELETE FROM {} WHERE id = %s RETURNING id;'.format(table_name)
         result = self.__execute_sql(query=sql_q, values=(id,))
         return result is not None
 
