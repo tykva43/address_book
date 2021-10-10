@@ -26,14 +26,18 @@ def get_users_list():
 def create_user():
     # Check if the request has the file part
     if 'photo' not in request.files:
-        return redirect(request.url)
+        return {'errors': 'Photo is required'}
     photo_file = request.files['photo']
-    print('88888888888888888888888888888888888888888888888888888888')
-    print()
     result = bl.create_user(user_data=request.form.to_dict(), photo_file=photo_file)
     return result
 
 
 @urls_blueprint.route('/users/<int:user_id>/', methods=['PATCH'])
 def update_user(user_id):
-    return 'Update user {}'.format(user_id)
+    # Check if the request has the file part
+    photo_file = None
+    if 'photo' in request.files:
+        photo_file = request.files['photo']
+    result = bl.update_user(user_id=user_id, user_data=request.form.to_dict(), photo_file=photo_file)
+    return result
+
