@@ -122,7 +122,7 @@ def remove_user(user_id):
     db.complete_transaction()
     if len(result) is not 0:
         try:
-            os.remove(result[0]['id'])
+            os.remove(result[0]['photo_path'])
         except:
             pass
         deleting_result['info'] = 'Deleted'
