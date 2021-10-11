@@ -8,4 +8,4 @@
 __pycache__/
 
 # Other files and dirs
-/users
+/server/users
