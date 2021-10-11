@@ -53,8 +53,8 @@ DB_TABLES = {
             'plural': 'Phones'
         },
         'record_name': {
-            'singular': 'Phone',
-            'plural': 'Phones'
+            'singular': 'phone',
+            'plural': 'phones'
         },
         'validation': {
             'user_id': [{

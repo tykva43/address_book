@@ -4,7 +4,7 @@ import hashlib
 
 from db_access_layer import DB
 from db_settings import DB_TABLES
-from settings import ALLOWED_EXTENSIONS, UPLOAD_FOLDER
+from settings import UPLOAD_FOLDER
 
 db = DB()
 
@@ -57,56 +57,9 @@ def validate_data(data, columns, table_name):
                 if not is_field_valid:
                     errors[column] = message.format(column)
                     is_valid = False
-
         except KeyError:
-            errors['fields'] = 'Not enough {} record fields'.format(DB_TABLES[table_name]['record_name']['singular'])
-    return is_valid, errors
-
-
-def validate_user_data(data, columns, photo_file, is_photo_required=True):
-    is_valid = True
-    errors = {}
-    # Check if photo is valid
-    if is_photo_required:
-        is_valid, errors = validate_photo_file(photo_file)
-    # Check user data
-    for column in columns:
-        if column not in DB_TABLES['users']['required']:
             is_valid = False
-            errors[column] = 'User object has no {} field'.format(column)
-        try:
-            if column == 'name':
-                if len(data['name']) <= 5 or len(data['name']) > 70:
-                    is_valid = False
-                    errors['name'] = 'Name must be longer than 5 characters and shorter than 70 characters in length.'
-            if column == 'gender':
-                if data['gender'] not in ['male', 'female']:
-                    errors['gender'] = 'Gender should be "male" or "female"'
-            if column == 'born_at':
-                if re.match(r'\d{2}-\d{2}-\d{4}', data['born_at']) is None:
-                    errors['born_at'] = 'Invalid birth date format'
-        except KeyError:
-            errors['fields'] = 'Not enough user record fields'
-    return is_valid, errors
-
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def validate_photo_file(photo_file):
-    errors = {}
-    is_valid = True
-    # If user does not select file, browser also
-    # submit an empty part without filename
-    if photo_file.filename == '':
-        is_valid = False
-        errors['photo'] = 'You need to select a photo file'
-    # Check if the file is image file
-    if not photo_file or not allowed_file(photo_file.filename):
-        is_valid = False
-        errors['photo'] = 'Invalid photo file'
+            errors['fields'] = 'Not enough {} record fields'.format(DB_TABLES[table_name]['record_name']['singular'])
     return is_valid, errors
 
 
@@ -117,9 +70,8 @@ def generate_photo_path(data, file_type):
 
 def create_user(user_data, photo_file):
     user_data['photo_path'] = ''
-    # is_valid, errors = validate_user_data(data=user_data, columns=DB_TABLES['users']['required'],
-    #                                       photo_file=photo_file)
     is_valid, errors = validate_data(data=user_data, columns=DB_TABLES['users']['required'], table_name='users')
+
     creating_result = {}
     if not is_valid:
         creating_result['info'] = 'Invalid data'
@@ -143,8 +95,7 @@ def create_user(user_data, photo_file):
 
 
 def update_user(user_id, user_data, photo_file=None):
-    is_valid, errors = validate_user_data(data=user_data, columns=user_data.keys(),
-                                          photo_file=photo_file, is_photo_required=photo_file is not None)
+    is_valid, errors = validate_data(data=user_data, columns=user_data.keys(), table_name='users')
     updating_result = {}
     if not is_valid:
         updating_result['info'] = 'Invalid data'
@@ -213,11 +164,7 @@ def get_data(table_name, id=None):
 
 
 def update_data(id, data, table_name):
-    # is_valid, errors = validate_user_data(data=user_data, columns=user_data.keys(),
-    #                                       photo_file=photo_file, is_photo_required=photo_file is not None)
-    is_valid = True
-    errors = {}
-    # todo: validate data
+    is_valid, errors = validate_data(data=data, columns=data.keys(), table_name=table_name)
     updating_result = {}
     if not is_valid:
         updating_result['info'] = 'Invalid data'
@@ -236,10 +183,7 @@ def update_data(id, data, table_name):
 
 
 def create_data(data, table_name):
-    # is_valid, errors = validate_data(data=data, columns=DB_TABLES[table_name]['required'])
-    # todo: validation
-    is_valid = True
-    errors = {}
+    is_valid, errors = validate_data(data=data, columns=DB_TABLES[table_name]['required'], table_name=table_name)
     creating_result = {}
     if not is_valid:
         creating_result['info'] = 'Invalid data'
@@ -247,8 +191,15 @@ def create_data(data, table_name):
     else:
         # If data is correct
         # Insert data to database
-        results = db.insert(table_name=table_name, column_names=data.keys(), values=data)
+        selected = db.select('users', 'id', condition={'id': data['user_id']})
+        if len(selected) == 1:
+            result = db.insert(table_name=table_name, column_names=data.keys(), values=data)
+            if len(result) == 0:
+                creating_result['info'] = 'Doesn\'t created'
+            else:
+                creating_result['info'] = 'Created'
+        else:
+            creating_result['info'] = 'Invalid user_id'
         # Complete db transaction
         db.complete_transaction()
-        creating_result['info'] = 'Created'
     return creating_result
