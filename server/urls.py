@@ -6,6 +6,15 @@ from settings import ALLOWED_EXTENSIONS
 urls_blueprint = Blueprint('urls', __name__,)
 
 
+def get_first_param():
+    sort_by = None
+    if request.query_string:
+        first_param = request.query_string.decode('utf-8').split('&')[0]
+        first_param = first_param.split('=')
+        sort_by = (first_param[0], first_param[1])
+    return sort_by
+
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -34,12 +43,14 @@ def remove_user(user_id):
 
 @urls_blueprint.route('/users/<int:user_id>/', methods=['POST'])
 def get_user(user_id):
-    return bl.get_data(id=user_id, table_name='users')
+    sort_by = get_first_param()
+    return bl.get_data(id=user_id, table_name='users', sort_by=sort_by)
 
 
 @urls_blueprint.route('/users/', methods=['POST'])
 def get_users_list():
-    return bl.get_data(table_name='users')
+    sort_by = get_first_param()
+    return bl.get_data(table_name='users', sort_by=sort_by)
 
 
 @urls_blueprint.route('/users/', methods=['PUT'])
@@ -81,12 +92,14 @@ def remove_email(email_id):
 
 @urls_blueprint.route('/emails/<int:email_id>/', methods=['POST'])
 def get_email(email_id):
-    return bl.get_data(id=email_id, table_name='emails')
+    sort_by = get_first_param()
+    return bl.get_data(id=email_id, table_name='emails', sort_by=sort_by)
 
 
 @urls_blueprint.route('/emails/', methods=['POST'])
 def get_emails_list():
-    return bl.get_data(table_name='emails')
+    sort_by = get_first_param()
+    return bl.get_data(table_name='emails', sort_by=sort_by)
 
 
 @urls_blueprint.route('/emails/', methods=['PUT'])
@@ -108,12 +121,14 @@ def remove_phone(phone_id):
 
 @urls_blueprint.route('/phones/<int:phone_id>/', methods=['POST'])
 def get_phone(phone_id):
-    return bl.get_data(id=phone_id, table_name='phones')
+    sort_by = get_first_param()
+    return bl.get_data(id=phone_id, table_name='phones', sort_by=sort_by)
 
 
 @urls_blueprint.route('/phones/', methods=['POST'])
 def get_phones_list():
-    return bl.get_data(table_name='phones')
+    sort_by = get_first_param()
+    return bl.get_data(table_name='phones', sort_by=sort_by)
 
 
 @urls_blueprint.route('/phones/', methods=['PUT'])

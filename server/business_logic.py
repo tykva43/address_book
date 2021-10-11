@@ -151,11 +151,18 @@ def remove_data(id, table_name):
     return deleting_result
 
 
-def get_data(table_name, id=None):
+def get_data(table_name, id=None, sort_by=None):
     condition = None if id is None else {'id': id}
-    result = db.select(table_name=table_name, columns='*', condition=condition)
+    order = tuple()
+    if sort_by:
+        column = sort_by[0]
+        value = sort_by[1].lower()
+        if column in DB_TABLES[table_name]['fields'] and value in ['asc', 'desc']:
+            order = (column, value)
+    result = db.select(table_name=table_name, columns='*', condition=condition, order=order)
     db.complete_transaction()
     select_result = {}
+
     if id is None:
         select_result[DB_TABLES[table_name]['record_name']['plural']] = result
     else:

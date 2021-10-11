@@ -86,13 +86,13 @@ class DB:
         result = self.__execute_sql(query=sql_q, values=(id,))
         return result
 
-    def select(self, table_name, columns='*', condition=None, order=None):
+    def select(self, table_name, columns='*', condition=None, order=tuple()):
         """
         Get records from a table in a specific order when a given condition is met.
         :param condition: dict of conditions where key(column_name)=value(record_value)
         :param table_name: str, name of table.
         :param columns: str, columns name that should be selected.
-        :param order: tuple of two str, where first element - column name, second - 'gt' or 'lt'.
+        :param order: tuple of two str, where first element - column name, second - 'asc' or 'desc'.
         :return: list of tuples with records data.
         """
         if columns == '':
@@ -102,8 +102,9 @@ class DB:
             conditions = ' AND '.join(['{}={}'.format(column, condition[column]) for column in condition.keys()])
             sql_q += ' WHERE ' + conditions
         if order is not None:
-            if len(order == 2):
-                sql_q += ' ORDER BY {} {}'.format(order[0], 'DESC' if order[1] == 'lt' else 'ASC')
+            if len(order) == 2:
+                sql_q += ' ORDER BY {} {}'.format(order[0], order[1])
+
         return self.__execute_sql(sql_q)
 
     def close(self):
