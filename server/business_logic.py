@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import hashlib
@@ -68,14 +69,56 @@ def generate_photo_path(data, file_type):
     return '{}.{}'.format(hash_object.hexdigest(), file_type)
 
 
+def pop_key(dictionary, key):
+    key_data = '[]'
+    if key in dictionary.keys():
+        key_data = dictionary[key]
+        del dictionary[key]
+    return key_data
+
+
+def check_user_additional_data(emails, phones):
+    is_valid = True
+    errors = {}
+    # Temporary set user_id as 1 for validating another fields
+    for i, email in enumerate(emails):
+        email['user_id'] = 1
+        is_emails_valid, errors['emails[{i}]'] = validate_data(data=email, columns=DB_TABLES['emails']['required'],
+                                                               table_name='emails')
+        if not is_emails_valid:
+            is_valid = False
+
+    for i, phone in enumerate(phones):
+        phone['user_id'] = 1
+        is_phones_valid, errors['phones[{i}]'] = validate_data(data=phone, columns=DB_TABLES['phones']['required'],
+                                                               table_name='phones')
+        if not is_phones_valid:
+            is_valid = False
+    return is_valid, errors
+
+
+def set_user_id_to_list(data, user_id):   # Set user_id to additional user data (emails, phones)
+    for elem in data:
+        elem['user_id'] = user_id
+    return data
+
+
 def create_user(user_data, photo_file):
     user_data['photo_path'] = ''
+
+    # Get emails and phones fields as string and parse to dict
+    emails = json.loads(pop_key(user_data, 'emails'))
+    phones = json.loads(pop_key(user_data, 'photos'))
+
+    # Check if user data is valid
     is_valid, errors = validate_data(data=user_data, columns=DB_TABLES['users']['required'], table_name='users')
+    is_valid, messages = check_user_additional_data(emails, phones)
 
     creating_result = {}
     if not is_valid:
         creating_result['info'] = 'Invalid data'
         creating_result['errors'] = errors
+        creating_result['additional_fields'] = messages
     else:
         # If user data is correct
         # Insert user data to database (with empty string as photo_path)
@@ -88,6 +131,13 @@ def create_user(user_data, photo_file):
         photo_file.save(photo_path)
         # Update photo_path field in user record
         db.update(table_name='users', values={'photo_path': photo_path}, id=user_id)
+        # Insert emails and photos if exists
+        set_user_id_to_list(data=emails, user_id=user_id)
+        set_user_id_to_list(data=phones, user_id=user_id)
+        if len(emails) > 0:
+            db.insert('emails', emails[0].keys(), emails)
+        if len(phones) > 0:
+            db.insert('phones', phones[0].keys(), phones)
         # Complete db transaction
         db.complete_transaction()
         creating_result['info'] = 'Created'
