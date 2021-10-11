@@ -11,6 +11,7 @@ port = app.config.get('PORT')
 debug = app.config.get('DEBUG')
 host = app.config.get('HOST')
 
+
 app.register_blueprint(urls_blueprint, url_prefix='/api')
 
 if __name__ == '__main__':

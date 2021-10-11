@@ -3,9 +3,64 @@ import re
 import hashlib
 
 from db_access_layer import DB
-from settings import ALLOWED_EXTENSIONS, UPLOAD_FOLDER, DB_TABLES
+from db_settings import DB_TABLES
+from settings import ALLOWED_EXTENSIONS, UPLOAD_FOLDER
 
 db = DB()
+
+
+# ============= Users =============
+
+
+def validate_field(context, data):
+    is_valid = True
+    message = ''
+    valid_type = context['VALID_TYPE']
+    condition = context['CONDITION']
+    if valid_type == 'NULL':
+        is_valid = (data is None) is condition
+        if not is_valid:
+            is_null = 'shouldn\'t' if not condition else 'should'
+            message = '\'{}\' field ' + is_null + ' be null.'
+    if valid_type == 'IN_RANGE':
+        is_valid = data in condition
+        if not is_valid:
+            message = '\'{}\' field should be one of this values: [' + ', '.join(condition) + ']'
+    if valid_type == 'REGULAR':
+        if re.match(condition, data) is None:
+            is_valid = False
+            message = 'Invalid \'{}\' field format'
+    if valid_type == 'STR_LEN':
+        if len(data) < condition[0] or len(data) > condition[1]:
+            is_valid = False
+            message = '\'{}\' field must be ' + str(condition[0]) + ' characters or longer and ' \
+                      + str(condition[1]) + ' characters and less in length.'
+    if valid_type == 'IS_DIGIT':
+        if (re.search(r'\d+', data) is not None) != condition:
+            not_str = '' if condition else 'not '
+            is_valid = False
+            message = '\'{}\' field must ' + not_str + 'contain numbers.'
+    return is_valid, message
+
+
+def validate_data(data, columns, table_name):
+    is_valid = True
+    errors = {}
+    # Check data
+    for column in columns:
+        if column not in DB_TABLES[table_name]['required']:
+            is_valid = False
+            errors[column] = '{} has no {} field'.format(DB_TABLES[table_name]['object_name']['singular'], column)
+        try:
+            for context in DB_TABLES[table_name]['validation'][column]:
+                is_field_valid, message = validate_field(context=context, data=data[column])
+                if not is_field_valid:
+                    errors[column] = message.format(column)
+                    is_valid = False
+
+        except KeyError:
+            errors['fields'] = 'Not enough {} record fields'.format(DB_TABLES[table_name]['record_name']['singular'])
+    return is_valid, errors
 
 
 def validate_user_data(data, columns, photo_file, is_photo_required=True):
@@ -62,8 +117,9 @@ def generate_photo_path(data, file_type):
 
 def create_user(user_data, photo_file):
     user_data['photo_path'] = ''
-    is_valid, errors = validate_user_data(data=user_data, columns=DB_TABLES['users']['required'],
-                                          photo_file=photo_file)
+    # is_valid, errors = validate_user_data(data=user_data, columns=DB_TABLES['users']['required'],
+    #                                       photo_file=photo_file)
+    is_valid, errors = validate_data(data=user_data, columns=DB_TABLES['users']['required'], table_name='users')
     creating_result = {}
     if not is_valid:
         creating_result['info'] = 'Invalid data'
@@ -131,13 +187,68 @@ def remove_user(user_id):
     return deleting_result
 
 
-def get_users(user_id=None):
-    condition = None if user_id is None else {'id': user_id}
-    result = db.select(table_name='users', columns='*', condition=condition)
+def remove_data(id, table_name):
+    deleting_result = {}
+    # Remove record with id = id
+    result = db.delete(table_name=table_name, id=id)
+    # Complete db transaction
+    db.complete_transaction()
+    if len(result) is not 0:
+        deleting_result['info'] = 'Deleted'
+    else:
+        deleting_result['info'] = 'Doesn\'t removed.  No record with such id.'
+    return deleting_result
+
+
+def get_data(table_name, id=None):
+    condition = None if id is None else {'id': id}
+    result = db.select(table_name=table_name, columns='*', condition=condition)
     db.complete_transaction()
     select_result = {}
-    if user_id is None:
-        select_result['users'] = result
+    if id is None:
+        select_result[DB_TABLES[table_name]['record_name']['plural']] = result
     else:
-        select_result['user'] = result
+        select_result[DB_TABLES[table_name]['record_name']['singular']] = result
     return select_result
+
+
+def update_data(id, data, table_name):
+    # is_valid, errors = validate_user_data(data=user_data, columns=user_data.keys(),
+    #                                       photo_file=photo_file, is_photo_required=photo_file is not None)
+    is_valid = True
+    errors = {}
+    # todo: validate data
+    updating_result = {}
+    if not is_valid:
+        updating_result['info'] = 'Invalid data'
+        updating_result['errors'] = errors
+    else:
+        # If data is correct
+        # Update it
+        updated_ids = db.update(table_name=table_name, values=data, id=id)
+        # Complete db transaction
+        db.complete_transaction()
+        if len(updated_ids) == 0:
+            updating_result['info'] = 'Doesn\'t updated.  No record with such id.'
+        else:
+            updating_result['info'] = 'Updated'
+    return updating_result
+
+
+def create_data(data, table_name):
+    # is_valid, errors = validate_data(data=data, columns=DB_TABLES[table_name]['required'])
+    # todo: validation
+    is_valid = True
+    errors = {}
+    creating_result = {}
+    if not is_valid:
+        creating_result['info'] = 'Invalid data'
+        creating_result['errors'] = errors
+    else:
+        # If data is correct
+        # Insert data to database
+        results = db.insert(table_name=table_name, column_names=data.keys(), values=data)
+        # Complete db transaction
+        db.complete_transaction()
+        creating_result['info'] = 'Created'
+    return creating_result
